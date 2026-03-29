@@ -53,7 +53,7 @@ cd apps && ./install_ai_tools_offline.sh
 ├── install_ai_tools_x86_64.sh    # Intel 安装
 ├── download_tools.sh             # 离线包下载
 ├── macOS AI工具套装安装指南.md    # 手动安装文档
-├── recommended_skills/           # 推荐 Skills (自动安装到 ~/.claude/skills/)
+├── recommended_skills/           # 推荐 Skills（可包含 scripts/references/templates/assets/agents 等配套资源）
 └── apps/                         # 离线安装资源
     ├── install_ai_tools_offline.sh  # 离线安装脚本
     ├── casks/                       # GUI 应用 (VSCode, Claude Code 等)
@@ -103,6 +103,7 @@ cd apps && ./install_ai_tools_offline.sh
 - 下载日志：`./download_tools.log`
 - 安装标记：`~/.claude/.sysu-awesome-cc-installed`
 - Skills 目录：`~/.claude/skills/`, `~/.claude/agents/`, `~/.claude/commands/`
+- Office 类技能可在各自目录下复用 `scripts/office/` 共享打包、解包、校验与 LibreOffice 转换脚本
 
 ## Key Dependencies
 

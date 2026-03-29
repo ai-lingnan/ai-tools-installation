@@ -7,6 +7,7 @@
 | 主题名称 | 风格 | 适用场景 | 来源 |
 |---------|------|----------|------|
 | **academic** | 学术风格 | 学术报告、论文答辩 | kaisugi/marp-theme-academic |
+| **academic-lightblue** | 学术浅蓝 | 学术报告、教学演示 | 自制 |
 | **beam** | LaTeX Beamer 风格 | 学术演讲、技术分享 | rnd195/my-marp-themes |
 | **border** | 边框简约风格 | 通用演示 | rnd195/my-marp-themes |
 | **gradient** | 渐变背景 | 创意展示 | rnd195/my-marp-themes |
@@ -32,6 +33,19 @@
   ```yaml
   theme: academic
   class: lead  # 用于标题页
+  ```
+
+#### academic-lightblue
+- **特点**：清新浅蓝色背景，深蓝色标题，中文字体优化
+- **字体**：Helvetica Neue / PingFang SC / Microsoft YaHei
+- **配色**：背景 `#f0f7fc`，标题 `#2c5282` / `#1a365d`，强调 `#4299e1`
+- **适用**：学术报告、教学演示、工作流分享
+- **配置**：
+  ```yaml
+  theme: academic-lightblue
+  class: lead  # 用于标题页
+  class: small # 小字体页面（参考文献）
+  class: end   # 结束页
   ```
 
 #### beam
@@ -206,7 +220,8 @@ theme: https://rnd195.github.io/my-marp-themes/beam.css
 | 技术分享 | graph_paper, beam | turing |
 | 产品发布 | jobs | gradient |
 | 企业汇报 | companyLightBlue | companySZ |
-| 教学演示 | simple, graph_paper | academic |
+| 教学演示 | academic-lightblue, simple | graph_paper |
+| 工作流分享 | academic-lightblue | beam |
 | 创意展示 | gradient | jobs |
 
 ## 主题来源和许可证
