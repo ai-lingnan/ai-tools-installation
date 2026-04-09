@@ -122,6 +122,59 @@ def fix_heading_fonts(docx_file):
         print(f"Warning: Could not fix heading fonts and line spacing: {str(e)}")
         return False
 
+def fix_table_borders(docx_file):
+    """
+    为Word文档中所有表格添加黑色单线边框（外框+内框）。
+
+    Args:
+        docx_file (str): Word文档路径
+
+    Returns:
+        int: 修复的表格数量
+    """
+    try:
+        doc = Document(docx_file)
+        count = 0
+        for table in doc.tables:
+            tbl = table._tbl
+            tblPr = tbl.tblPr
+            if tblPr is None:
+                from docx.oxml import OxmlElement
+                tblPr = OxmlElement('w:tblPr')
+                tbl.insert(0, tblPr)
+
+            # Remove existing tblBorders if any
+            for existing in tblPr.findall(qn('w:tblBorders')):
+                tblPr.remove(existing)
+
+            # Create tblBorders element
+            from docx.oxml import OxmlElement
+            borders = OxmlElement('w:tblBorders')
+            for edge in ('top', 'left', 'bottom', 'right', 'insideH', 'insideV'):
+                element = OxmlElement(f'w:{edge}')
+                element.set(qn('w:val'), 'single')
+                element.set(qn('w:sz'), '4')
+                element.set(qn('w:space'), '0')
+                element.set(qn('w:color'), '000000')
+                borders.append(element)
+
+            # Insert tblBorders after tblW (proper schema order)
+            tblW = tblPr.find(qn('w:tblW'))
+            if tblW is not None:
+                tblW.addnext(borders)
+            else:
+                tblPr.append(borders)
+
+            count += 1
+
+        doc.save(docx_file)
+        return count
+
+    except Exception as e:
+        print(f"Warning: Could not fix table borders: {str(e)}")
+        return 0
+
+
 def is_chinese_char(char):
     """检查字符是否为中文字符"""
     return '\u4e00' <= char <= '\u9fff'
@@ -334,6 +387,12 @@ def convert_md_to_docx(input_file, output_file, reference_doc=None,
                     print(f"正在修复标题字体、行距和段后间距...")
                     if fix_heading_fonts(output_file):
                         print(f"✓ 标题字体已修复为仿宋，行距1.5倍，标题段后1行")
+
+                # 后处理：为表格添加边框
+                print(f"正在为表格添加边框...")
+                table_count = fix_table_borders(output_file)
+                if table_count > 0:
+                    print(f"✓ 已为 {table_count} 个表格添加边框")
 
                 # 后处理：将引用数字转换为上标
                 if superscript_citations:
