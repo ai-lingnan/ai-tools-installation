@@ -1,6 +1,6 @@
 ---
 name: marp-slides-creator
-description: '专业Marp演示文稿制作助手。支持完整工作流程：工作空间初始化、内容分析、slides制作、多维度审阅、中文语言规范审阅（中文演示文稿）、PNG转换检查、终稿确定。所有产出物集中管理在项目工作文件夹中。当用户提到"制作slides"、"做PPT"、"演示文稿"、"Marp"、"幻灯片"、"presentation"等关键词时自动启用。Professional Marp presentation assistant with complete workflow: workspace initialization, content analysis, slide creation, multi-dimensional review, Chinese language review (for Chinese presentations), PNG conversion check, and finalization. All outputs organized in project workspace.'
+description: 专业Marp演示文稿制作助手。支持完整工作流程：工作空间初始化、内容分析、slides制作、多维度审阅、中文语言规范审阅（中文演示文稿）、PNG转换检查、终稿确定。所有产出物集中管理在项目工作文件夹中。当用户提到"制作slides"、"做PPT"、"演示文稿"、"Marp"、"幻灯片"、"presentation"等关键词时自动启用。Professional Marp presentation assistant with complete workflow: workspace initialization, content analysis, slide creation, multi-dimensional review, Chinese language review (for Chinese presentations), PNG conversion check, and finalization. All outputs organized in project workspace.
 allowed-tools: Read, Write, Edit, Bash, Task, Glob
 ---
 
@@ -10,7 +10,7 @@ allowed-tools: Read, Write, Edit, Bash, Task, Glob
 
 本技能提供系统性多阶段Marp演示文稿制作流程，从工作空间初始化到终稿输出。对于中文演示文稿，额外包含中文语言规范审阅阶段。所有分析报告、初稿、审阅文档、PNG导出和终稿统一保存在项目工作文件夹中，便于管理和追溯。
 
-**支持多种主题风格**：内置 15 款精选主题，涵盖学术、商务、创意等场景。详见 `themes/README.md`。
+**支持多种主题风格**：内置 14 款精选主题，涵盖学术、商务、创意等场景。详见 `themes/README.md`。
 
 ## 核心原则
 
@@ -25,42 +25,10 @@ allowed-tools: Read, Write, Edit, Bash, Task, Glob
 
 ### 内容密度控制
 
-| 指标 | 安全值 | 警告值 | 危险值 |
-|------|--------|--------|--------|
-| 每页文字行数 | ≤6 行 | 7 行 | ≥8 行 |
-| 每行字符数 | ≤35 字符 | 36-40 字符 | >40 字符 |
-| 列表项数量 | ≤5 项 | 6 项 | >6 项 |
-| 嵌套列表深度 | 1 层 | 2 层 | >2 层 |
-
-> **注意**：数学公式因垂直间距需求，按 2 行计算。
-
 - **标题页**：主标题 + 副标题 + 作者信息
 - **内容页**：标题 + 3-5个要点（每点1-2行）
 - **对比页**：两栏对比，每栏不超过4点
 - **总结页**：3-5个核心要点
-
-### 标题页特殊处理
-
-标题页不需要页眉页脚信息（因为已经在标题和作者内容中了），使用以下指令隐藏：
-
-```markdown
-<!-- _class: lead -->
-<!-- _header: "" -->
-<!-- _footer: "" -->
-<!-- _paginate: false -->
-
-# 演示文稿标题
-```
-
-### 结束页特殊处理
-
-结束页不需要重复名字、单位、日期信息（因为已经在页脚中了），只需简洁的致谢：
-
-```markdown
-<!-- _class: end -->
-
-# 谢谢！
-```
 
 ## 七阶段工作流程
 
@@ -120,12 +88,12 @@ allowed-tools: Read, Write, Edit, Bash, Task, Glob
        header: "主题风格"
        multiSelect: false
        options:
-         - label: "academic-lightblue (学术浅蓝)"
-           description: "清新浅蓝背景，适合教学演示、工作流分享（推荐）"
          - label: "academic (学术风格)"
            description: "适合学术报告、论文答辩，maroon红色标题栏"
          - label: "beam (Beamer风格)"
            description: "仿LaTeX Beamer，适合学术演讲、技术研讨"
+         - label: "jobs (乔布斯风格)"
+           description: "Apple发布会风格，适合产品发布、商业演示"
          - label: "graph_paper (方格纸风格)"
            description: "技术分享、教学演示，手写笔记感"
    ```
@@ -138,8 +106,7 @@ allowed-tools: Read, Write, Edit, Bash, Task, Glob
    | 技术分享 | graph_paper, beam, turing |
    | 产品发布 | jobs, gradient |
    | 企业汇报 | companyLightBlue, companySZ |
-   | 教学演示 | academic-lightblue, simple, graph_paper |
-   | 工作流分享 | academic-lightblue, beam |
+   | 教学演示 | simple, graph_paper, academic |
    | 创意展示 | gradient, jobs, socrates |
 
    **主题文件位置**：`themes/` 目录下所有 `.css` 文件
@@ -271,53 +238,28 @@ allowed-tools: Read, Write, Edit, Bash, Task, Glob
    - 同样使用 `#` (h1) 作为页面标题
    - 支持 `class: lead` 用于特殊页面
 
-4. **修改Header/Footer**：根据演讲主题调整
-5. **逐页制作**：
+4. **必须包含居中样式**：frontmatter 的 `style` 中必须包含以下 CSS，否则图片和表格会左对齐：
+     ```css
+     /* 图片居中 */
+     img {
+       display: block !important;
+       margin: 0 auto !important;
+     }
+     /* 表格居中（覆盖主题的 width:100% 和 display:block） */
+     section table {
+       display: table !important;
+       width: auto !important;
+       margin-left: auto !important;
+       margin-right: auto !important;
+     }
+     ```
+     > **原因**：Marp 基础 CSS 设置 `section table { display: block; width: max-content }`，多数自定义主题又设置 `table { width: 100% }`，两者都会导致表格无法居中。必须用 `!important` 同时覆盖 `display`、`width` 和 `margin` 三个属性才能生效。`marp-template.md` 已包含这些样式。
+
+5. **修改Header/Footer**：根据演讲主题调整
+6. **逐页制作**：
    - 遵循模板中的页面类型和格式
    - 每页严格控制内容量
    - 使用适当的Markdown格式（粗体、引用、列表）
-
-### 图片插入规范
-
-Slides 中嵌入图片时，**必须使用 `<img>` 标签并限制 `max-height`**，禁止使用裸 `![]()` 语法（容易导致图片溢出）。
-
-**主题默认 padding 为 `40px 50px`，可用内容高度约 640px（720 - 80）。标题约占 60px。**
-
-| 场景 | 推荐 max-height | 示例 |
-|------|-----------------|------|
-| 标题 + 图片 + 文字 | 300px | 图片上方有标题，下方有说明文字 |
-| 标题 + 图片（无文字） | 420px | 整页展示一张图 |
-| 标题 + 图片 + 列表 | 250px | 图片旁边或下方有要点 |
-| 标题 + 图片 + 少量文字/公式 | **左右分屏** | 见下方左右分屏模板 |
-
-**模板（居中图片）**：
-
-```html
-<img src="path/to/image.png" alt="描述" style="max-height: 350px; display: block; margin: 0 auto;">
-```
-
-**左右分屏模板（图片 + 少量文字/公式）**：
-
-当页面内容为 **一张图 + 少量文字或公式**（≤6 行）时，优先使用左右分屏布局：文字在左、图片在右。
-
-```html
-<div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1.5em; align-items: center;">
-<div>
-
-文字内容、公式、列表等
-
-</div>
-<div>
-
-<img src="path/to/image.png" alt="描述" style="max-height: 360px;">
-
-</div>
-</div>
-```
-
-> **注意**：`<div>` 内容前后必须保留空行，否则 Markdown 语法（如 `$$...$$`、列表）不会被解析。
-
-> **禁止**：`![center](path/to/image.png)` — 这种写法无法控制图片尺寸，经常导致溢出。
 
 **页面类型选择**（参考 `references/slide-types.md`）：
 
@@ -489,13 +431,11 @@ Task 工具参数：
 
 | 指标 | 安全值 | 警告值 | 危险值 |
 |------|--------|--------|--------|
-| 每页文字行数 | ≤6行 | 7行 | ≥8行 |
-| 每行字符数 | ≤35字符 | 36-40字符 | >40字符 |
+| 每页文字行数 | ≤6行 | 7-8行 | >8行 |
+| 每行字符数 | ≤35字符 | 36-45字符 | >45字符 |
 | 列表项数量 | ≤5项 | 6项 | >6项 |
 | 嵌套列表深度 | 1层 | 2层 | >2层 |
 | 段落长度 | ≤2行 | 3行 | >3行 |
-
-注意：数学公式按 2 行计算。
 
 ## 审阅任务
 
@@ -718,76 +658,87 @@ Task 工具参数：
 
 ---
 
-### 阶段四：迭代式视觉 QA（最少 3 轮）
+### 阶段四：PNG转换与并行检查
 
 **触发**：审阅修改完成后
 
-**核心原则**：导出→审查→修复 循环至少执行 3 轮，直到所有 slides 通过检查或达到最大轮次。
+**执行步骤**：
 
-#### PNG 导出管线（两步法）
+1. **转换为PNG**：
 
-> **警告**：**禁止使用 `--images png`** 导出包含本地图片的 slides — 图片不会被渲染（显示空白）。必须使用下面的 PDF→PNG 两步法。
+   ```bash
+   # 从02_drafts读取初稿，导出到04_exports
+   marp slides_[项目名]/02_drafts/presentation.md -o slides_[项目名]/04_exports/slides.html --html
+   marp slides_[项目名]/02_drafts/presentation.md --images png -o slides_[项目名]/04_exports/
+   ```
 
-> **路径要求**：所有 marp-cli 参数**必须使用绝对路径**。相对路径会导致 `--theme-set` 被错误解析。
+2. **并行部署Agents检查**：
+   使用 Task 工具并行派遣多个 subagent，每个检查一组页面：
 
-```bash
-# 步骤 1：导出 PDF（正确渲染本地图片）
-PUPPETEER_TIMEOUT=120000 npx @marp-team/marp-cli \
-  /absolute/path/to/presentation.md \
-  -o /absolute/path/to/04_exports/slides.pdf \
-  --theme-set /absolute/path/to/themes/ \
-  --allow-local-files --html
+   ```text
+   使用 Task 工具，设置 subagent_type="general-purpose"，run_in_background=true
 
-# 步骤 2：PDF 转 PNG（使用 pdf2image）
-python3 -c "
-from pdf2image import convert_from_path
-images = convert_from_path('/absolute/path/to/04_exports/slides.pdf', dpi=200)
-for i, img in enumerate(images, 1):
-    img.save(f'/absolute/path/to/04_exports/slide.{i:03d}.png', 'PNG')
-"
-```
+   派遣多个agents（根据总页数，每个agent检查3-5页）：
 
-**关键参数**：
-- `PUPPETEER_TIMEOUT=120000`：防止大型 deck 在 30 秒超时
-- `--allow-local-files`：允许加载本地图片资源
-- `--html`：启用 HTML 标签支持（`<img>` 等）
+   Agent 1: 检查第1-5页
+   Agent 2: 检查第6-10页
+   Agent 3: 检查第11-15页
+   ...
 
-#### 迭代审查流程
+   每个Agent的prompt：
 
-每轮流程：
+   你是一个slides视觉质量检查专家。请检查以下PNG图片：
 
-1. **导出**：PDF→PNG 两步法
-2. **评估**：使用 `openrouter-image-eval` skill 或 subagent 逐页评估 PNG
-3. **记录**：保存反馈到 `03_reviews/round_N/feedback.md`
-4. **修复**：根据反馈修改 `02_drafts/presentation.md`
-5. **重复**：直到满足退出条件
+   [使用Read工具读取 slides_[项目名]/04_exports/ 中对应的PNG文件]
 
-**退出条件**：
-- 0 个 MAJOR 问题 且 ≤2 个 MINOR 问题（per deck）
-- 或达到最大 5 轮
+   检查要点：
+   1. 文字是否超出页面边界？
+   2. 内容是否过于拥挤？
+   3. 文字是否过小难以阅读？
+   4. 布局是否平衡？
+   5. 是否有明显的格式问题？
 
-**Subagent 架构要求**：
+   输出格式：
+   ## 页面检查报告
 
-- 每个 review+fix 循环作为自包含 subagent 运行
-- **Subagent 必须将所有结果保存到本地文件**，只返回状态摘要给主 agent
-- **禁止使用 Read 工具读取 PNG 文件**（会导致图片维度错误崩溃）
-- 使用 `openrouter-image-eval` script 或 bash 脚本进行评估
-- 并行章节评估：3 章并行没问题（OpenRouter 处理约 10 req/s）
+   ### 第X页
+   - 状态：通过 / 需修改
+   - 问题：[问题描述]
+   - 建议：[修改建议，如"拆分为两页"或"精简第3个要点"]
+   ```
+
+3. **汇总检查结果**：使用 TaskOutput 工具收集所有agent的报告
 
 **文件保存位置**：
 
-- PDF 中间文件：`slides_[项目名]/04_exports/slides.pdf`
-- PNG 图片：`slides_[项目名]/04_exports/slide.001.png`, `slide.002.png`, ...
-- HTML 预览：`slides_[项目名]/04_exports/slides.html`
-- 各轮反馈：`slides_[项目名]/03_reviews/round_1/feedback.md`, `round_2/feedback.md`, ...
+- HTML预览：`slides_[项目名]/04_exports/slides.html`
+- PNG图片：`slides_[项目名]/04_exports/presentation.001.png`, `presentation.002.png`, ...
 
-### 阶段五：终稿确定
+### 阶段五：问题修复与终稿确定
 
-**触发**：迭代 QA 通过（0 MAJOR，≤2 MINOR）
+**触发**：收到所有页面检查报告
 
 **执行步骤**：
 
-1. **生成终稿**：
+1. **问题分类**：
+   - **溢出问题**：文字超出页面 → 拆分页面或精简内容
+   - **密度问题**：内容过多 → 删减或重组
+   - **格式问题**：排版错误 → 修正Markdown
+   - **可读性问题**：字太小/太密 → 调整层次
+
+2. **逐一修复**：
+   使用 Edit 工具修改 `slides_[项目名]/02_drafts/presentation.md`，针对每个问题：
+
+   - **拆页策略**：将一页拆为"概述页"+"详情页"
+   - **精简策略**：删除次要信息，保留核心
+   - **重组策略**：调整信息层次，使用更合适的页面类型
+
+3. **重新验证**：
+   - 再次转换为PNG到 `04_exports/`
+   - 快速检查修改后的页面
+   - 确认问题已解决
+
+4. **生成终稿**：
    将修复后的文件复制到 `05_final/` 并导出最终版本：
 
    ```bash
@@ -835,19 +786,6 @@ for i, img in enumerate(images, 1):
 **输出**：终稿文件路径（包含 HTML、PDF、PPTX 三种格式）和制作摘要
 
 ## 常见问题处理
-
-### 经验总结：常见修复模式
-
-以下是 5 轮迭代审查中总结的高频问题和对应修复方案：
-
-| 问题 | 检测方式 | 修复方法 |
-|------|----------|----------|
-| 图片溢出 | 图片超出 slide 边界 | 使用 `<img style="max-height: Xpx">` 替代 `![]()` |
-| 内容过密（≥8 行） | 要点过多 | 合并相关条目、使用引用块压缩 |
-| 元素重叠 | 文字与图片重叠 | 减小图片 max-height，添加间距 |
-| 嵌入图表文字过小 | 插图中标签难读 | 仅标记为 MINOR（markdown 无法修复） |
-| 公式间距紧凑 | 数学公式紧贴文字 | 在公式和内容间添加 `<br>` |
-| PNG 导出图片空白 | 本地图片未渲染 | 使用 PDF→PNG 两步法（禁止 `--images png`） |
 
 ### 文字溢出
 
@@ -910,57 +848,38 @@ footer: "讲座标题 | 机构名称"
 - **`references/slide-types.md`** - 页面类型详解
 - **`references/review-checklist.md`** - 审阅检查清单
 - **`themes/README.md`** - 主题说明文档
-- **`themes/*.css`** - 15款精选主题文件
+- **`themes/*.css`** - 14款精选主题文件
 
 ## Marp-CLI 命令参考
 
-> **重要**：所有路径必须使用**绝对路径**。所有 PDF 导出命令必须加 `PUPPETEER_TIMEOUT=120000`。
-
 ```bash
 # 预览初稿（启动本地服务器，加载自定义主题）
-npx @marp-team/marp-cli -s /abs/path/slides_[项目名]/02_drafts/presentation.md --theme-set /abs/path/themes/
+npx @marp-team/marp-cli -s slides_[项目名]/02_drafts/presentation.md --theme-set ./themes/
 
-# 导出 HTML 预览
-PUPPETEER_TIMEOUT=120000 npx @marp-team/marp-cli /abs/path/slides_[项目名]/02_drafts/presentation.md \
-  -o /abs/path/slides_[项目名]/04_exports/slides.html --html --theme-set /abs/path/themes/
-
-# 导出 PDF（PNG 导出的第一步）
-PUPPETEER_TIMEOUT=120000 npx @marp-team/marp-cli /abs/path/slides_[项目名]/02_drafts/presentation.md \
-  -o /abs/path/slides_[项目名]/04_exports/slides.pdf \
-  --theme-set /abs/path/themes/ --allow-local-files --html
-
-# PDF → PNG（PNG 导出的第二步）
-python3 -c "
-from pdf2image import convert_from_path
-images = convert_from_path('/abs/path/slides_[项目名]/04_exports/slides.pdf', dpi=200)
-for i, img in enumerate(images, 1):
-    img.save(f'/abs/path/slides_[项目名]/04_exports/slide.{i:03d}.png', 'PNG')
-"
+# 导出初稿到04_exports（使用自定义主题）
+npx @marp-team/marp-cli slides_[项目名]/02_drafts/presentation.md -o slides_[项目名]/04_exports/slides.html --html --theme-set ./themes/
+npx @marp-team/marp-cli slides_[项目名]/02_drafts/presentation.md --images png -o slides_[项目名]/04_exports/ --theme-set ./themes/
 
 # 导出终稿到05_final（HTML）
-PUPPETEER_TIMEOUT=120000 npx @marp-team/marp-cli /abs/path/slides_[项目名]/05_final/presentation.md \
-  -o /abs/path/slides_[项目名]/05_final/slides.html --html --theme-set /abs/path/themes/
+npx @marp-team/marp-cli slides_[项目名]/05_final/presentation.md -o slides_[项目名]/05_final/slides.html --html --theme-set ./themes/
 
 # 导出终稿 PDF 版本
-PUPPETEER_TIMEOUT=120000 npx @marp-team/marp-cli /abs/path/slides_[项目名]/05_final/presentation.md \
-  -o /abs/path/slides_[项目名]/05_final/slides.pdf --theme-set /abs/path/themes/ --allow-local-files --html
+npx @marp-team/marp-cli slides_[项目名]/05_final/presentation.md -o slides_[项目名]/05_final/slides.pdf --theme-set ./themes/ --allow-local-files
 
 # 导出终稿可编辑 PowerPoint (PPTX) 版本
-PUPPETEER_TIMEOUT=120000 npx @marp-team/marp-cli /abs/path/slides_[项目名]/05_final/presentation.md \
-  -o /abs/path/slides_[项目名]/05_final/slides.pptx --pptx-editable --theme-set /abs/path/themes/ --allow-local-files --html
+npx @marp-team/marp-cli slides_[项目名]/05_final/presentation.md -o slides_[项目名]/05_final/slides.pptx --pptx-editable --theme-set ./themes/ --allow-local-files
 ```
 
 **参数说明**：
 
 | 参数 | 说明 |
 |------|------|
-| `PUPPETEER_TIMEOUT=120000` | 环境变量，防止大型 deck 导出时 30 秒超时 |
-| `--theme-set /abs/path/themes/` | 加载本地 themes 文件夹（必须绝对路径） |
+| `--theme-set ./themes/` | 加载本地 themes 文件夹中的所有主题 |
 | `--allow-local-files` | 允许加载本地图片和资源（PDF/PPTX 导出必需） |
 | `--pptx-editable` | 导出可编辑的 PPTX（需要 LibreOffice） |
-| `--html` | 启用 HTML 标签支持（`<img>` 等） |
+| `--html` | 启用 HTML 标签支持 |
 | `-s` | 启动预览服务器 |
-| ~~`--images png`~~ | **已弃用** — 不渲染本地图片，改用 PDF→PNG 两步法 |
+| `--images png` | 导出为 PNG 图片序列 |
 
 **导出格式说明**：
 

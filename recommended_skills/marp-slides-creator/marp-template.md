@@ -11,6 +11,17 @@ style: |
   h1, h2, h3, h4, h5, h6 {
     font-family: "Helvetica Neue", "Helvetica", "Arial", "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", sans-serif;
   }
+  /* 图片和表格居中 */
+  img {
+    display: block !important;
+    margin: 0 auto !important;
+  }
+  section table {
+    display: table !important;
+    width: auto !important;
+    margin-left: auto !important;
+    margin-right: auto !important;
+  }
   blockquote {
     color: #0066cc;
     border-left: 4px solid #0066cc;

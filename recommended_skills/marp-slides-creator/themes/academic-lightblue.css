@@ -3,13 +3,13 @@
 @import 'default';
 
 :root {
-  --color-background: #f0f7fc;
+  --color-background: #f7fafe;
   --color-foreground: #2d3748;
   --color-highlight: #2c5282;
   --color-highlight-dark: #1a365d;
   --color-accent: #4299e1;
-  --color-accent-light: rgba(66, 153, 225, 0.15);
-  --color-accent-lighter: rgba(66, 153, 225, 0.08);
+  --color-accent-light: rgba(66, 153, 225, 0.10);
+  --color-accent-lighter: rgba(66, 153, 225, 0.05);
 }
 
 section {
