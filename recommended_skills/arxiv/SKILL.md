@@ -1,314 +1,281 @@
 ---
 name: arxiv
-description: 搜索 arxiv 论文并总结。当用户说"找寻XX的论文"、"搜索XX的论文"、"找arxiv上XX主题的论文"时使用。
+description: Search and retrieve academic papers from arXiv using their free REST API. No API key needed. Search by keyword, author, category, or ID. Combine with web_extract or the ocr-and-documents skill to read full paper content.
+version: 1.0.0
+author: Hermes Agent
+license: MIT
+metadata:
+  hermes:
+    tags: [Research, Arxiv, Papers, Academic, Science, API]
+    related_skills: [ocr-and-documents]
 ---
 
-# Arxiv 论文搜索
+# arXiv Research
 
-## 执行流程
+Search and retrieve academic papers from arXiv via their free REST API. No API key, no dependencies — just curl.
 
-```
-用户请求 → 步骤1:确认需求 → 步骤2:构建查询 → 步骤3:执行搜索 → 步骤4:整理结果 → 步骤5:后续服务
-```
+## Quick Reference
 
----
+| Action | Command |
+|--------|---------|
+| Search papers | `curl "https://export.arxiv.org/api/query?search_query=all:QUERY&max_results=5"` |
+| Get specific paper | `curl "https://export.arxiv.org/api/query?id_list=2402.03300"` |
+| Read abstract (web) | `web_extract(urls=["https://arxiv.org/abs/2402.03300"])` |
+| Read full paper (PDF) | `web_extract(urls=["https://arxiv.org/pdf/2402.03300"])` |
 
-## 步骤 1：确认需求
+## Searching Papers
 
-询问用户两个问题：
+The API returns Atom XML. Parse with `grep`/`sed` or pipe through `python3` for clean output.
 
-**问题 1：整理深度**
-
-> 你希望我如何整理搜索结果？
-> 1. **快速了解**：表格概览 + 简短总结
-> 2. **深入分析**：分类整理 + 关键论文详解 + 研究趋势
-> 3. **文献综述**：保存到文件 + 完整学术综述
-
-**问题 2：结果数量**
-
-| 场景 | 建议数量 |
-|------|----------|
-| 快速了解某领域 | 10-15 篇 |
-| 深入研究某主题 | 20-30 篇 |
-| 撰写文献综述 | 30-50 篇 |
-| 追踪最新进展 | 5-10 篇 |
-
----
-
-## 步骤 2：构建搜索查询
-
-### 查询语法
-
-arxiv 支持以下搜索语法：
-
-| 语法 | 含义 | 示例 |
-|------|------|------|
-| `AND` | 同时包含 | `LLM AND reasoning` |
-| `OR` | 包含其一 | `GPT OR LLaMA` |
-| `ANDNOT` | 排除 | `transformer ANDNOT vision` |
-| `"..."` | 精确匹配 | `"chain of thought"` |
-| `ti:` | 标题搜索 | `ti:attention mechanism` |
-| `au:` | 作者搜索 | `au:Hinton` |
-| `abs:` | 摘要搜索 | `abs:reinforcement learning` |
-| `cat:` | 分类搜索 | `cat:cs.CL` |
-
-### 常用分类代码
-
-**计算机科学 (cs)**
-- `cs.AI` - 人工智能
-- `cs.CL` - 计算语言学（NLP）
-- `cs.CV` - 计算机视觉
-- `cs.LG` - 机器学习
-- `cs.NE` - 神经网络与进化计算
-- `cs.RO` - 机器人学
-- `cs.SE` - 软件工程
-
-**统计学 (stat)**
-- `stat.ML` - 机器学习（统计方向）
-
-**电子工程 (eess)**
-- `eess.AS` - 音频与语音处理
-
-### 查询构建策略
-
-**用户说"找 LLM 相关论文"**
-→ 基础查询：`LLM OR "large language model"`
-→ 如果结果太泛，追问具体方向后细化
-
-**用户说"找某作者的论文"**
-→ 使用 `au:作者名`
-→ 注意：arxiv 作者名格式为 `lastname_firstname`
-
-**用户说"找某领域最新进展"**
-→ 组合领域关键词 + 限制分类
-→ 示例：`"instruction tuning" AND cat:cs.CL`
-
-**用户给出模糊需求**
-→ 先用宽泛查询获取 5-10 篇
-→ 根据结果中的关键词优化查询
-→ 再次搜索获取更精准结果
-
----
-
-## 步骤 3：执行搜索
-
-脚本位置：`scripts/search.py`（相对于本 skill 目录）
+### Basic search
 
 ```bash
-python scripts/search.py "查询语句" -n 数量
+curl -s "https://export.arxiv.org/api/query?search_query=all:GRPO+reinforcement+learning&max_results=5"
 ```
 
-**参数说明**：
-- 第一个参数：查询语句（必需）
-- `-n`：返回数量（默认 20）
+### Clean output (parse XML to readable format)
 
-**示例**：
 ```bash
-# 搜索 LLM 推理相关论文，返回 30 篇
-python scripts/search.py "LLM AND reasoning" -n 30
-
-# 搜索特定作者
-python scripts/search.py "au:bengio" -n 15
-
-# 搜索特定分类下的主题
-python scripts/search.py "attention AND cat:cs.CV" -n 20
+curl -s "https://export.arxiv.org/api/query?search_query=all:GRPO+reinforcement+learning&max_results=5&sortBy=submittedDate&sortOrder=descending" | python3 -c "
+import sys, xml.etree.ElementTree as ET
+ns = {'a': 'http://www.w3.org/2005/Atom'}
+root = ET.parse(sys.stdin).getroot()
+for i, entry in enumerate(root.findall('a:entry', ns)):
+    title = entry.find('a:title', ns).text.strip().replace('\n', ' ')
+    arxiv_id = entry.find('a:id', ns).text.strip().split('/abs/')[-1]
+    published = entry.find('a:published', ns).text[:10]
+    authors = ', '.join(a.find('a:name', ns).text for a in entry.findall('a:author', ns))
+    summary = entry.find('a:summary', ns).text.strip()[:200]
+    cats = ', '.join(c.get('term') for c in entry.findall('a:category', ns))
+    print(f'{i+1}. [{arxiv_id}] {title}')
+    print(f'   Authors: {authors}')
+    print(f'   Published: {published} | Categories: {cats}')
+    print(f'   Abstract: {summary}...')
+    print(f'   PDF: https://arxiv.org/pdf/{arxiv_id}')
+    print()
+"
 ```
 
-**依赖**：需要安装 `arxiv` Python 库（`pip install arxiv`）
+## Search Query Syntax
 
----
+| Prefix | Searches | Example |
+|--------|----------|---------|
+| `all:` | All fields | `all:transformer+attention` |
+| `ti:` | Title | `ti:large+language+models` |
+| `au:` | Author | `au:vaswani` |
+| `abs:` | Abstract | `abs:reinforcement+learning` |
+| `cat:` | Category | `cat:cs.AI` |
+| `co:` | Comment | `co:accepted+NeurIPS` |
 
-## 步骤 4：整理结果
+### Boolean operators
 
-### 模式 A：快速了解
+```
+# AND (default when using +)
+search_query=all:transformer+attention
 
-**输出结构**：
+# OR
+search_query=all:GPT+OR+all:BERT
 
-```markdown
-## 搜索结果
+# AND NOT
+search_query=all:language+model+ANDNOT+all:vision
 
-[表格：序号 | 标题 | 作者 | 日期 | PDF]
+# Exact phrase
+search_query=ti:"chain+of+thought"
 
-## 快速总结
-
-这批论文主要聚焦于 [领域]，核心方向包括：
-1. [方向1]：[代表性工作]
-2. [方向2]：[代表性工作]
-
-值得优先关注的论文：#X、#Y、#Z
+# Combined
+search_query=au:hinton+AND+cat:cs.LG
 ```
 
----
+## Sort and Pagination
 
-### 模式 B：深入分析
+| Parameter | Options |
+|-----------|---------|
+| `sortBy` | `relevance`, `lastUpdatedDate`, `submittedDate` |
+| `sortOrder` | `ascending`, `descending` |
+| `start` | Result offset (0-based) |
+| `max_results` | Number of results (default 10, max 30000) |
 
-**输出结构**：
-
-```markdown
-## 搜索结果
-
-[表格]
-
-## 领域概览
-
-[1-2 段描述研究领域背景和当前主要方向]
-
-## 主题分类
-
-### 主题 1：[名称]（N 篇）
-
-| 论文 | 核心贡献 | 方法特点 |
-|------|----------|----------|
-| #1 标题 | 解决了什么问题 | 用了什么方法 |
-| #2 标题 | ... | ... |
-
-### 主题 2：[名称]（N 篇）
-...
-
-## 关键论文详解
-
-### 推荐 1：[论文标题]
-- **问题**：该论文要解决什么问题
-- **方法**：核心技术方案
-- **结果**：主要实验结论和数据
-- **价值**：为什么值得深入阅读
-
-### 推荐 2：...
-
-## 研究趋势
-
-### 热点方向
-- [方向1]：被 N 篇论文关注，代表性工作...
-- [方向2]：...
-
-### 新兴方法
-- [方法1]：被 N 篇论文采用，特点是...
-- [方法2]：...
-
-### 开放问题
-- [问题1]：多篇论文提到但尚未解决
-- [问题2]：...
+```bash
+# Latest 10 papers in cs.AI
+curl -s "https://export.arxiv.org/api/query?search_query=cat:cs.AI&sortBy=submittedDate&sortOrder=descending&max_results=10"
 ```
 
----
+## Fetching Specific Papers
 
-### 模式 C：文献综述
+```bash
+# By arXiv ID
+curl -s "https://export.arxiv.org/api/query?id_list=2402.03300"
 
-**步骤**：
-
-1. 询问用户保存路径（默认：`./arxiv-review-{主题}-{日期}.md`）
-
-2. 生成综述文件，包含：
-   - 摘要（200字以内）
-   - 研究背景
-   - 主题分类与详解（同模式 B）
-   - 研究趋势分析
-   - 研究空白与未来方向
-   - 参考文献列表
-
-3. **参考文献格式**：
-   ```
-   [1] 作者. 标题. arXiv:XXXX.XXXXX, 年份. URL
-   ```
-
----
-
-## 步骤 5：后续服务
-
-完成整理后，询问：
-
-> 是否需要深入阅读某篇具体论文？请告诉我编号或标题。
-
-### 单篇论文深入分析
-
-如果用户选择某篇论文，提供以下分析：
-
-```markdown
-## [论文标题]
-
-**基本信息**
-- 作者：[作者列表]
-- 发布日期：[日期]
-- PDF：[链接]
-- 分类：[arxiv 分类]
-
-**摘要翻译**
-[中文翻译，保持学术准确性]
-
-**核心内容**
-
-### 1. 研究问题
-- 该论文要解决什么问题？
-- 为什么这个问题重要？
-- 现有方法的局限性是什么？
-
-### 2. 方法创新
-- 核心技术方案
-- 与现有方法的区别
-- 关键设计选择及其理由
-
-### 3. 实验结论
-- 主要实验设置
-- 核心结果数据
-- 消融实验发现
-
-### 4. 局限与展望
-- 作者承认的局限
-- 潜在的改进方向
-
-**阅读建议**
-- 如果你关注 [X]，重点看 Section [N]
-- 如果你关注 [Y]，重点看 Section [M]
+# Multiple papers
+curl -s "https://export.arxiv.org/api/query?id_list=2402.03300,2401.12345,2403.00001"
 ```
 
+## BibTeX Generation
+
+After fetching metadata for a paper, generate a BibTeX entry:
+
+{% raw %}
+```bash
+curl -s "https://export.arxiv.org/api/query?id_list=1706.03762" | python3 -c "
+import sys, xml.etree.ElementTree as ET
+ns = {'a': 'http://www.w3.org/2005/Atom', 'arxiv': 'http://arxiv.org/schemas/atom'}
+root = ET.parse(sys.stdin).getroot()
+entry = root.find('a:entry', ns)
+if entry is None: sys.exit('Paper not found')
+title = entry.find('a:title', ns).text.strip().replace('\n', ' ')
+authors = ' and '.join(a.find('a:name', ns).text for a in entry.findall('a:author', ns))
+year = entry.find('a:published', ns).text[:4]
+raw_id = entry.find('a:id', ns).text.strip().split('/abs/')[-1]
+cat = entry.find('arxiv:primary_category', ns)
+primary = cat.get('term') if cat is not None else 'cs.LG'
+last_name = entry.find('a:author', ns).find('a:name', ns).text.split()[-1]
+print(f'@article{{{last_name}{year}_{raw_id.replace(\".\", \"\")},')
+print(f'  title     = {{{title}}},')
+print(f'  author    = {{{authors}}},')
+print(f'  year      = {{{year}}},')
+print(f'  eprint    = {{{raw_id}}},')
+print(f'  archivePrefix = {{arXiv}},')
+print(f'  primaryClass  = {{{primary}}},')
+print(f'  url       = {{https://arxiv.org/abs/{raw_id}}}')
+print('}')
+"
+```
+{% endraw %}
+
+## Reading Paper Content
+
+After finding a paper, read it:
+
+```
+# Abstract page (fast, metadata + abstract)
+web_extract(urls=["https://arxiv.org/abs/2402.03300"])
+
+# Full paper (PDF → markdown via Firecrawl)
+web_extract(urls=["https://arxiv.org/pdf/2402.03300"])
+```
+
+For local PDF processing, see the `ocr-and-documents` skill.
+
+## Common Categories
+
+| Category | Field |
+|----------|-------|
+| `cs.AI` | Artificial Intelligence |
+| `cs.CL` | Computation and Language (NLP) |
+| `cs.CV` | Computer Vision |
+| `cs.LG` | Machine Learning |
+| `cs.CR` | Cryptography and Security |
+| `stat.ML` | Machine Learning (Statistics) |
+| `math.OC` | Optimization and Control |
+| `physics.comp-ph` | Computational Physics |
+
+Full list: https://arxiv.org/category_taxonomy
+
+## Helper Script
+
+The `scripts/search_arxiv.py` script handles XML parsing and provides clean output:
+
+```bash
+python scripts/search_arxiv.py "GRPO reinforcement learning"
+python scripts/search_arxiv.py "transformer attention" --max 10 --sort date
+python scripts/search_arxiv.py --author "Yann LeCun" --max 5
+python scripts/search_arxiv.py --category cs.AI --sort date
+python scripts/search_arxiv.py --id 2402.03300
+python scripts/search_arxiv.py --id 2402.03300,2401.12345
+```
+
+No dependencies — uses only Python stdlib.
+
 ---
 
-## 论文质量判断标准
+## Semantic Scholar (Citations, Related Papers, Author Profiles)
 
-在推荐关键论文时，按以下标准评估：
+arXiv doesn't provide citation data or recommendations. Use the **Semantic Scholar API** for that — free, no key needed for basic use (1 req/sec), returns JSON.
 
-| 维度 | 高质量信号 | 低质量信号 |
-|------|------------|------------|
-| **问题价值** | 解决实际痛点、有广泛影响 | 边缘问题、缺乏应用场景 |
-| **方法创新** | 新思路、新框架、新范式 | 简单改进、参数调优 |
-| **实验充分** | 多数据集、消融实验、对比公平 | 单数据集、缺少对比 |
-| **结果显著** | 大幅提升、突破瓶颈 | 微小改进、在误差范围内 |
-| **作者背景** | 知名团队、顶会记录 | 首次发表、无背景 |
+### Get paper details + citations
 
-**注意**：arxiv 是预印本，未经同行评审。对于重要决策，建议追踪论文是否被顶会接收。
+```bash
+# By arXiv ID
+curl -s "https://api.semanticscholar.org/graph/v1/paper/arXiv:2402.03300?fields=title,authors,citationCount,referenceCount,influentialCitationCount,year,abstract" | python3 -m json.tool
+
+# By Semantic Scholar paper ID or DOI
+curl -s "https://api.semanticscholar.org/graph/v1/paper/DOI:10.1234/example?fields=title,citationCount"
+```
+
+### Get citations OF a paper (who cited it)
+
+```bash
+curl -s "https://api.semanticscholar.org/graph/v1/paper/arXiv:2402.03300/citations?fields=title,authors,year,citationCount&limit=10" | python3 -m json.tool
+```
+
+### Get references FROM a paper (what it cites)
+
+```bash
+curl -s "https://api.semanticscholar.org/graph/v1/paper/arXiv:2402.03300/references?fields=title,authors,year,citationCount&limit=10" | python3 -m json.tool
+```
+
+### Search papers (alternative to arXiv search, returns JSON)
+
+```bash
+curl -s "https://api.semanticscholar.org/graph/v1/paper/search?query=GRPO+reinforcement+learning&limit=5&fields=title,authors,year,citationCount,externalIds" | python3 -m json.tool
+```
+
+### Get paper recommendations
+
+```bash
+curl -s -X POST "https://api.semanticscholar.org/recommendations/v1/papers/" \
+  -H "Content-Type: application/json" \
+  -d '{"positivePaperIds": ["arXiv:2402.03300"], "negativePaperIds": []}' | python3 -m json.tool
+```
+
+### Author profile
+
+```bash
+curl -s "https://api.semanticscholar.org/graph/v1/author/search?query=Yann+LeCun&fields=name,hIndex,citationCount,paperCount" | python3 -m json.tool
+```
+
+### Useful Semantic Scholar fields
+
+`title`, `authors`, `year`, `abstract`, `citationCount`, `referenceCount`, `influentialCitationCount`, `isOpenAccess`, `openAccessPdf`, `fieldsOfStudy`, `publicationVenue`, `externalIds` (contains arXiv ID, DOI, etc.)
 
 ---
 
-## 边界情况处理
+## Complete Research Workflow
 
-### 搜索结果为空
-1. 检查查询语法是否正确
-2. 尝试更宽泛的关键词
-3. 移除分类限制
-4. 告知用户并建议替代查询
+1. **Discover**: `python scripts/search_arxiv.py "your topic" --sort date --max 10`
+2. **Assess impact**: `curl -s "https://api.semanticscholar.org/graph/v1/paper/arXiv:ID?fields=citationCount,influentialCitationCount"`
+3. **Read abstract**: `web_extract(urls=["https://arxiv.org/abs/ID"])`
+4. **Read full paper**: `web_extract(urls=["https://arxiv.org/pdf/ID"])`
+5. **Find related work**: `curl -s "https://api.semanticscholar.org/graph/v1/paper/arXiv:ID/references?fields=title,citationCount&limit=20"`
+6. **Get recommendations**: POST to Semantic Scholar recommendations endpoint
+7. **Track authors**: `curl -s "https://api.semanticscholar.org/graph/v1/author/search?query=NAME"`
 
-### 搜索结果过多且分散
-1. 询问用户更具体的兴趣方向
-2. 添加分类限制（`cat:cs.XX`）
-3. 使用更精确的短语搜索（`"..."`）
+## Rate Limits
 
-### 用户需求模糊
-不要猜测，主动询问：
-- "你是想了解 [A方向] 还是 [B方向]？"
-- "你更关注理论方法还是应用场景？"
-- "需要限定在某个时间范围内吗？"
+| API | Rate | Auth |
+|-----|------|------|
+| arXiv | ~1 req / 3 seconds | None needed |
+| Semantic Scholar | 1 req / second | None (100/sec with API key) |
 
-### 非英文论文需求
-arxiv 主要是英文论文，如果用户需要中文文献：
-- 说明 arxiv 的语言限制
-- 建议使用知网、万方等中文学术平台
+## Notes
 
----
+- arXiv returns Atom XML — use the helper script or parsing snippet for clean output
+- Semantic Scholar returns JSON — pipe through `python3 -m json.tool` for readability
+- arXiv IDs: old format (`hep-th/0601001`) vs new (`2402.03300`)
+- PDF: `https://arxiv.org/pdf/{id}` — Abstract: `https://arxiv.org/abs/{id}`
+- HTML (when available): `https://arxiv.org/html/{id}`
+- For local PDF processing, see the `ocr-and-documents` skill
 
-## 总结原则
+## ID Versioning
 
-- **聚焦核心贡献**：每篇论文用 1-2 句话说清楚它做了什么
-- **避免罗列**：提炼和归纳，不是复制摘要
-- **建立联系**：指出论文之间的关系（互补、对比、改进、引用）
-- **突出价值**：帮助用户判断哪些论文值得时间投入
-- **保持客观**：呈现论文的局限性，不过度吹捧
+- `arxiv.org/abs/1706.03762` always resolves to the **latest** version
+- `arxiv.org/abs/1706.03762v1` points to a **specific** immutable version
+- When generating citations, preserve the version suffix you actually read to prevent citation drift (a later version may substantially change content)
+- The API `<id>` field returns the versioned URL (e.g., `http://arxiv.org/abs/1706.03762v7`)
+
+## Withdrawn Papers
+
+Papers can be withdrawn after submission. When this happens:
+- The `<summary>` field contains a withdrawal notice (look for "withdrawn" or "retracted")
+- Metadata fields may be incomplete
+- Always check the summary before treating a result as a valid paper
